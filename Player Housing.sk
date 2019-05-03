@@ -1,0 +1,327 @@
+variables:
+	{%player%.world} = false
+	{%world%.spawn.point.setted} = false
+	{%player%.build.mode} = false
+	
+	{flat.world.option} = true
+	{kill.mobs.option} = true
+	
+options:
+	{total.level} : 0
+	{build.level} : 0
+
+on first join:
+	set {%player%.world} to false
+	set {%player%-1.spawn.point.setted} to false
+	set {%player%.build.mode} to false
+	set {total.level} to 0
+	set {build.level} to 0
+
+on join:
+	clear player's inventory
+	set slot 4 of player's inventory to compass named "&aHouse GUI"
+
+on place:
+	if {%player%.build.mode} is false:
+		cancel event
+		send "&cYou need to activate the build mode with ""/housebuildmode"""
+	else:
+		add 0.1 to {total.level}
+		add 0.3 to  {build.level}
+		
+on break:
+	if world is "%player%-1":
+		if {%player%.build.mode} is true:
+			add 0.1 to {total.level}
+			add 0.3 to {build.level}
+		else:
+			cancel event
+			send "&cYou need to activate the build mode with ""/housebuildmode"""
+	else:
+		cancel event
+		send "&cYou can't break blocks in other players worlds."
+		
+on chat:
+	cancel event
+	broadcast "[&6%{total.level}%&f] &f%player% &b>> &f%message%"
+		
+on weather change to rain:
+    cancel the event
+		
+on drop:
+	cancel event
+		
+on hunger meter change:
+	cancel event
+
+on death:
+	make player execute command "housemenu"
+	clear drops
+	
+on consume:
+	cancel event
+	send "&cYou can't eat this!"
+		
+on explosion prime:
+	cancel event
+	kill the creeper
+		
+
+on rightclick with compass:
+    if name of tool of player is "&aHouse GUI":
+        clear player's inventory
+        set slot 0 of player's inventory to grass named "&aCreate your house world"
+        set slot 1 of player's inventory to chest named "&6Manage your house world"
+        set slot 2 of player's inventory to diamond_pickaxe named "&eBuild mode"
+        set slot 3 of player's inventory to blue wool named "&dTeleport to other player house world with /housevisit <player>"
+        set slot 7 of player's inventory to diamond named "&bAdmin options"
+        set slot 8 of player's inventory to barrier named "&cBack"
+		
+on rightclick with grass:
+	if name of tool of player is "&aCreate your house world":
+		if {%player%.world} is false:
+			clear player's inventory
+			wait 1 tick
+			set slot 0 of player to grass named "&fNormal" with lore "&aCreate your normal house world"
+			set slot 4 of player to slimeball named "&fFlat" with lore "&aCreate your flat house world"
+			set slot 8 of player to barrier named "&cBack to world creation"
+		else:
+			send "&cYou have created too many worlds."
+			
+on rightclick with grass:
+	if name of tool of player is "&fNormal":
+		clear player's inventory
+		wait 1 tick
+		set slot 4 of player to green glass named "&aConfirm normal world creation"
+		set slot 8 of player to barrier named "&cBack to world creation"
+
+on rightclick with slimeball:
+	if name of tool of player is "&fFlat":
+		if {flat.world.option} is true:
+			clear player's inventory
+			wait 1 tick
+			set slot 4 of player to green glass named "&aConfirm flat world creation"
+			set slot 8 of player to barrier named "&cBack to world creation"
+		else:
+			send "&cYou can't create flat worlds in this server."
+		
+on rightclick with green glass:
+	if name of tool of player is "&aConfirm normal world creation":
+		send "&aStarting the creation of your house world..."
+		execute console command "mv create %player%-1 normal"
+		set {%player%.world} to true
+		send "&aWorld &6%player%-1 &acreated. Teleporting..."
+		execute console command "mv tp %player% %player%-1"
+		wait 1 tick
+		set block under the player to blue wool named "&fSpawn point"
+		execute player command "housemenu"
+		send "&6Use the manage feature to set your house spawn"
+	if name of tool of player is "&aConfirm flat world creation":
+		send "&aStarting the creation of your house world..."
+		execute console command "mv create %player%-1 normal -t flat"
+		set {%player%.world} to true
+		send "&aWorld &6%player%-1 created. Teleporting..."
+		execute console command "mv tp %player% %player%-1"
+		wait 1 tick
+		set block under the player to blue wool named "&fSpawn point"
+		execute player command "housemenu"
+		send "&6Use the manage feature to set your house spawn"
+
+on rightclick with chest:
+	if name of tool of player is "&6Manage your house world":
+		clear player's inventory
+		wait 1 tick
+		set slot 0 of player to 1 cactus green named "&aSet house world spawn point"
+		set slot 1 of player to 1 gray dye named "&aTeleport to your house world spawn point"
+		set slot 2 of player to 1 light blue dye named "&bKill all mobs"
+		set slot 8 of player to 1 barrier named "&cBack to menu"
+		
+on rightclick with cactus green:
+	if name of tool of player is "&aSet house world spawn point":
+		execute player command "housesethome"
+		
+on rightclick with gray dye:
+	if name of tool of player is "&aTeleport to your house world spawn point":
+		if {%player%.world} is true:
+			if {%player%-1.spawn.point.setted} is true:
+				teleport player to {%player%-1.spawn.point}
+				send "&aTeleported to your house world spawn point."
+			else:
+				send "&cA spawn point is not setted in your house world. You can set it with the manage menu."
+				wait 2 seconds
+				send "&aTeleporting you to your original world spawn point."
+				wait 2 seconds
+				make console execute command "mv tp %player% %player%-1"
+		else:
+			send "&cYou don't own a world."
+			
+on rightclick with light blue dye:
+	if name of tool of player is "&bKill all mobs":
+		if {kill.mobs.option} is true:
+			if world is "%player%-1":
+				send "&aAll mobs killed."
+				loop all entities in radius 1000 around player:
+					kill all endermen
+					kill all zombies
+					kill all spiders
+					kill all creepers
+					kill all slimes
+					kill all magma slimes
+					kill all witches
+					kill all skeletons
+					kill all withers
+					kill all enderdragons
+			else:
+				send "&cThis is not your house world or you are not looking at the ground."
+		else:
+			send "&cYou can't kill mobs with the menu in this server."
+			
+on rightclick with diamond pickaxe:
+	if name of tool of player is "&eBuild mode":
+		make player execute command "housebuildmode"
+			
+on leftclick with diamond pickaxe:
+	if name of tool of player is "&eBuild mode":
+		cancel event
+		send "&cYou can't break blocks with pickaxes."
+		
+		
+on rightclick with barrier:
+	if name of tool of player is "&cBack":
+		clear player's inventory
+		set slot 4 of player's inventory to compass named "&aHouse GUI"
+	if name of tool of player is "&cBack to menu":
+		clear player's inventory
+		set slot 0 of player's inventory to grass named "&aCreate your house world"
+		set slot 1 of player's inventory to chest named "&6Manage your house world"
+		set slot 2 of player's inventory to diamond_pickaxe named "&eBuild mode"
+		set slot 3 of player's inventory to blue wool named "&dTeleport to other player house world with /housevisit <player>"
+		set slot 7 of player's inventory to diamond named "&bAdmin options"
+		set slot 8 of player's inventory to barrier named "&cBack"
+	if name of tool of player is "&cBack to world creation":
+		clear player's inventory
+		set slot 0 of player to grass named "&fNormal" with lore "&aCreate your normal house world"
+		set slot 4 of player to slimeball named "&fFlat" with lore "&aCreate your flat house world"
+		set slot 8 of player to barrier named "&cBack to menu"
+		
+on rightclick with diamond:
+	if name of tool is "&bAdmin options":
+		if player has permission "house.admin.options.command.usage":
+			clear player's inventory
+			set slot 8 of player to barrier named "&cBack to menu"
+			if {flat.world.option} is true:
+				if {kill.mobs.option} is true:
+					set slot 0 of player to 160:5 named "Can players create flat worlds?" with lore "&aTrue"
+					set slot 1 of player to 160:5 named "Can players kill mobs with menu?" with lore "&aTrue"
+			if {flat.world.option} is false:
+				if {kill.mobs.option} is false:
+					set slot 0 of player to 160:14 named "Can players create flat worlds?" with lore "&cFalse"
+					set slot 1 of player to 160:14 named "Can players kill mobs with menu?" with lore "&cFalse"
+			if {flat.world.option} is true:
+				if {kill.mobs.option} is false:
+					set slot 0 of player to 160:5 named "Can players create flat worlds?" with lore "&aTrue"
+					set slot 1 of player to 160:14 named "Can players kill mobs with menu?" with lore "&cFalse"
+			if {flat.world.option} is false:
+				if {kill.mobs.option} is true:
+					set slot 0 of player to 160:14 named "Can players create flat worlds?" with lore "&cFalse"
+					set slot 1 of player to 160:5 named "Can players kill mobs with menu?" with lore "&aTrue"
+		else:
+			send "&cYou need a permission to see this inventory GUI."
+					
+on rightclick with 160:5:
+	if name of tool of player is "Can players create flat worlds?":
+		set {flat.world.option} to false
+		wait 1 tick
+		make player execute command "houseadminoptions"
+	if name of tool of player is "Can players kill mobs with menu?":
+		set {kill.mobs.option} to false
+		wait 1 tick
+		make player execute command "houseadminoptions"
+		
+on rightclick with 160:14:
+	if name of tool of player is "Can players create flat worlds?":
+		set {flat.world.option} to true
+		wait 1 tick
+		make player execute command "houseadminoptions"
+	if name of tool of player is "Can players kill mobs with menu?":
+		set {kill.mobs.option} to true
+		wait 1 tick
+		make player execute command "houseadminoptions"
+	
+		
+		
+command /housemenu:
+	trigger:
+		if {%player%.build.mode} is true:
+			make player execute command "housebuildmode"
+		else:
+			clear player's inventory
+			wait 1 tick
+			set slot 4 of player to 1 compass named "&aHouse GUI"
+		
+command /housesethome:
+	trigger:
+		if world is "%player%-1":			
+			set {%world%.spawn.point} to location of player
+			send "&aHouse world spawn point setted."
+			set {%world%.spawn.point.setted} to true
+		else:
+			send "&cThis is not your house world."
+					
+command /housestats:
+	trigger:
+		if {%player%.world} is true:
+			send "&aTotal level: &6%{total.level}%"
+			send "&aBuild level: &6%{build.level}%"
+		else:
+			send "&cYou don't own a world."
+
+command /housebuildmode:
+	trigger:
+		if {%player%.build.mode} is false:
+			set {%player%.build.mode} to true
+			send "&aBuild mode activated. Use ""/housegive <item>"" to receive items."
+			clear player's inventory
+		else:
+			set {%player%.build.mode} to false
+			send "&cBuild mode deactivated. Use ""/housebuildmode"" to reactivate it."
+			make player execute command "housemenu"
+	
+command /housegive <item>:
+	trigger:
+		if {%player%.build.mode} is true:
+			if arg 1 is barrier:
+				send "&cYou can't have this block."
+			else:
+				give arg 1 to player
+				
+command /housevisit <offline player>:
+	trigger:
+		if {%arg 1%.world} is true:
+			teleport player to {%arg 1%-1.spawn.point}
+			send "&aTeleported to &6%arg 1% &ahouse world spawn point."
+		else:
+			send "&cThis player is not owning a world."
+				
+command /houseadminoptions:
+	trigger:
+		if player has permission "house.admin.options.command.usage":
+			clear player's inventory
+			set {%player%.build.mode} to false
+			set slot 8 of player to barrier named "&cBack to menu"
+			if {flat.world.option} is true:
+				if {kill.mobs.option} is true:
+					set slot 0 of player to 160:5 named "Can players create flat worlds?" with lore "&aTrue"
+					set slot 1 of player to 160:5 named "Can players kill mobs with menu?" with lore "&aTrue"
+			if {flat.world.option} is false:
+				if {kill.mobs.option} is false:
+					set slot 0 of player to 160:14 named "Can players create flat worlds?" with lore "&cFalse"
+					set slot 1 of player to 160:14 named "Can players kill mobs with menu?" with lore "&cFalse"
+			if {flat.world.option} is true:
+				if {kill.mobs.option} is false:
+					set slot 0 of player to 160:5 named "Can players create flat worlds?" with lore "&aTrue"
+					set slot 1 of player to 160:14 named "Can players kill mobs with menu?" with lore "&cFalse"
+			if {flat.world.option} is false:
+				if {kill.mobs.option} is true:
+					set slot 0 of player to 160:14 named "Can players create flat worlds?" with lore "&cFalse"
+					set slot 1 of player to 160:5 named "Can players kill mobs with menu?" with lore "&aTrue"
